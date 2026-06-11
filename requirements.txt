@@ -7,3 +7,7 @@ langgraph>=0.0.30
 python-dotenv>=1.0.1
 structlog
 httpx
+langchain-text-splitters
+fastapi-users[sqlalchemy]>=13.0.0
+aiosqlite>=0.20.0
+motor>=3.4.0

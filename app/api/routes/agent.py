@@ -3,6 +3,8 @@ from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel, Field
 from app.agents.example_agent import ExampleAgent
 from app.core.logging import get_logger
+from app.core.users import current_active_user
+from app.models.user import User
 
 router = APIRouter()
 logger = get_logger(__name__)
@@ -42,6 +44,7 @@ def get_example_agent() -> ExampleAgent:
 async def run_agent(
     request: AgentRequest,
     agent: ExampleAgent = Depends(get_example_agent),
+    current_user: User = Depends(current_active_user),
 ):
     thread_id = request.thread_id or str(uuid.uuid4())
 
@@ -68,7 +71,10 @@ async def run_agent(
 
 
 @router.get("/agent/info", summary="Get agent capabilities")
-async def agent_info(agent: ExampleAgent = Depends(get_example_agent)):
+async def agent_info(
+    agent: ExampleAgent = Depends(get_example_agent),
+    current_user: User = Depends(current_active_user),
+):
     return {
         "agent": agent.__class__.__name__,
         "model": agent.llm.model_name if hasattr(agent.llm, "model_name") else "unknown",

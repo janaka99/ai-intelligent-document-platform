@@ -11,6 +11,10 @@ class Settings(BaseSettings):
     # LLM
     openai_api_key: str 
 
+    # Auth & Database
+    secret_key: str = "default-insecure-secret"
+    database_url: str = "sqlite+aiosqlite:///./app.db"
+    mongodb_url: str = ""
     
     # Automatically read from a .env file
     model_config = SettingsConfigDict(

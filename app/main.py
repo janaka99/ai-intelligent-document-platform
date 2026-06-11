@@ -3,6 +3,8 @@ import time
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
+from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException
 
@@ -12,9 +14,13 @@ from app.core.config import get_settings
 from app.core.logging import setup_logging, get_logger
 from app.core.exceptions import http_exception_handler, unhandled_exception_handler
 from app.api.routes import agent as agent_router
+from app.api.routes import document as document_router
+from app.api.routes import embedding as embedding_router
 
-
-from app.api.routes import agent as agent_router
+from app.db.database import engine, Base
+from app.models.document import Document # Import to ensure it gets created
+from app.core.users import fastapi_users_app, auth_backend
+from app.schemas.user import UserRead, UserCreate, UserUpdate
 
 settings = get_settings()
 logger = get_logger(__name__)
@@ -31,6 +37,11 @@ async def lifespan(app: FastAPI):
         env=settings.app_env,
         version=settings.app_version,
     )
+    
+    # Create DB tables
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+        
     yield
     # Shutdown
     logger.info("app_shutdown", name=settings.app_name)
@@ -45,10 +56,34 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"], # Add your frontend domains here
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 app.include_router(agent_router.router, prefix="/api/v1", tags=["agents"])
+app.include_router(document_router.router, prefix="/api/v1/document", tags=["documents"])
 
-
+app.include_router(
+    fastapi_users_app.get_auth_router(auth_backend),
+    prefix="/auth/jwt",
+    tags=["auth"],
+)
+app.include_router(
+    fastapi_users_app.get_register_router(UserRead, UserCreate),
+    prefix="/auth",
+    tags=["auth"],
+)
+app.include_router(
+    fastapi_users_app.get_users_router(UserRead, UserUpdate),
+    prefix="/users",
+    tags=["users"],
+)
 # ── Middleware ─────────────────────────────────────────────────────────────────
 @app.middleware("http")
 async def logging_middleware(request: Request, call_next):
@@ -92,7 +127,8 @@ app.add_exception_handler(Exception, unhandled_exception_handler)
 
 # ── Routes ─────────────────────────────────────────────────────────────────────
 app.include_router(agent_router.router, prefix="/api/v1", tags=["agents"])
-
+app.include_router(document_router.router, prefix="/api/v1/document", tags=["documents"])
+app.include_router(embedding_router.router, prefix="/api/v1/embedding", tags=["embeddings"])
 
 # ── Health check ───────────────────────────────────────────────────────────────
 @app.get("/health")
