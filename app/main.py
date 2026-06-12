@@ -60,7 +60,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"], # Add your frontend domains here
+    allow_origins=["http://localhost:3000", "https://docintel-nine.vercel.app"], # No trailing slash
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
