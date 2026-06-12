@@ -22,4 +22,5 @@ dependencies = [
     "supabase>=2.4.0",
     "uvicorn[standard]>=0.28.0",
     "motor>=3.4.0",
+    "tiktoken>=0.13.0",
 ]

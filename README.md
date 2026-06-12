@@ -342,6 +342,11 @@ All settings live in `app/core/config.py` and are loaded from `.env`.
 | `LLM_TEMPERATURE` | `float` | `0.0` | LLM temperature (0 = deterministic) |
 | `AGENT_MAX_ITERATIONS` | `int` | `10` | Max LangGraph recursion depth |
 | `AGENT_TIMEOUT_SECONDS` | `int` | `60` | Agent run timeout |
+| `MAX_TURNS` | `int` | `100` | Max conversation turns per session before blocking new messages. Protects against infinite context costs. |
+| `WINDOW_SIZE` | `int` | `8` | Number of recent messages sent to the LLM verbatim (sliding window strategy). |
+| `SUMMARIZE_THRESHOLD` | `int` | `20` | Triggers rolling summarization when message history exceeds this count. |
+| `TOKEN_BUDGET` | `int` | `12000` | Hard cap on total tokens per request. If exceeded, oldest messages drop from the window. |
+| `RATE_LIMIT_PER_MINUTE` | `int` | `20` | Max requests per minute per user. Protects against spam and API abuse. |
 
 To add a new setting:
 1. Add it to `.env` and `.env.example`

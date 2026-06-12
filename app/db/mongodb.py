@@ -1,3 +1,4 @@
+import certifi
 from motor.motor_asyncio import AsyncIOMotorClient
 from app.core.config import get_settings
 
@@ -6,9 +7,10 @@ settings = get_settings()
 client = None
 
 def get_mongo_client() -> AsyncIOMotorClient:
+    print("mongob url is : ",settings.mongodb_url)
     global client
     if client is None:
-        client = AsyncIOMotorClient(settings.mongodb_url)
+        client = AsyncIOMotorClient(settings.mongodb_url, tlsCAFile=certifi.where())
     return client
 
 def get_mongo_db():

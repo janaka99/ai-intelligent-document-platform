@@ -16,6 +16,13 @@ class Settings(BaseSettings):
     database_url: str = "sqlite+aiosqlite:///./app.db"
     mongodb_url: str = ""
     
+    # Chat memory settings
+    max_turns: int = 100
+    window_size: int = 8
+    summarize_threshold: int = 20
+    token_budget: int = 12000
+    rate_limit_per_minute: int = 20
+    
     # Automatically read from a .env file
     model_config = SettingsConfigDict(
         env_file= ".env",

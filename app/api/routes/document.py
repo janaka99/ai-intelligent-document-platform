@@ -145,6 +145,23 @@ async def get_documents(
     return documents
 
 @router.get(
+    "/trained",
+    response_model=list[DocumentResponse],
+    summary="Get all trained documents for current user",
+)
+async def get_trained_documents(
+    current_user: User = Depends(current_active_user),
+    session: AsyncSession = Depends(get_async_session),
+):
+    stmt = select(Document).where(
+        Document.user_id == current_user.id,
+        Document.status == DocumentStatus.trained
+    )
+    result = await session.execute(stmt)
+    documents = result.scalars().all()
+    return documents
+
+@router.get(
     "/{document_id}",
     response_model=DocumentResponse,
     summary="Get a single document",
@@ -310,6 +327,31 @@ async def train_document_by_id(
             yield f"data: {json.dumps({'error': str(e)})}\n\n"
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")
+
+@router.get(
+    "/{document_id}/stats",
+    summary="Get document chunk and embedding stats",
+)
+async def get_document_stats(
+    document_id: str,
+    current_user: User = Depends(current_active_user),
+    session: AsyncSession = Depends(get_async_session),
+):
+    stmt = select(Document).where(Document.id == document_id, Document.user_id == current_user.id)
+    result = await session.execute(stmt)
+    document = result.scalars().first()
+    
+    if not document:
+        raise HTTPException(status_code=404, detail="Document not found")
+        
+    db = get_mongo_db()
+    chunk_count = await db.document_chunks.count_documents({"document_id": document_id})
+    embedding_count = await db.document_embeddings.count_documents({"document_id": document_id})
+    
+    return {
+        "chunk_count": chunk_count,
+        "embedding_count": embedding_count
+    }
 
 @router.delete(
     "/{document_id}",

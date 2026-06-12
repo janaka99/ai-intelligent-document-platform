@@ -1,0 +1,28 @@
+# Phase 5 & 6: Limits Middleware & Chat Routes
+
+**Phases 5 and 6 are complete!** The entire backend infrastructure for the RAG Chat API is officially finished. Here is a breakdown of the new layers we added.
+
+### Phase 5: Rate Limiting & Safety (`app/core/limiter.py`)
+To prevent the application from crashing or racking up a massive OpenAI bill, we introduced the `ChatLimiter`.
+- **`check_turn_limit`**: If a session reaches `MAX_TURNS` (100), the API responds with a `429 Too Many Requests`. This gracefully forces users to start fresh chats, which actually improves LLM performance because context remains highly relevant!
+- **`check_token_budget`**: Before we even run the graph, we count the tokens of the user's incoming message. If they pasted a 20,000-token book into the chat box, it immediately rejects it with a `413 Payload Too Large`, protecting the pipeline.
+
+### Phase 6: FastAPI Routes (`app/api/routes/chat.py`)
+We created a dedicated `chat.py` router to expose our DB queries and the LangGraph agent to the frontend.
+
+#### 1. Session Management
+- `POST /sessions`: Creates a new chat session linked to specific `document_ids`.
+- `GET /sessions`: Lists all of a user's active chats for their sidebar.
+- `GET /sessions/{session_id}/messages`: Fetches the history to populate the chat window on load.
+- `DELETE /sessions/{session_id}`: Soft deletes the chat so it disappears from the UI without destroying the underlying data immediately.
+
+#### 2. The Streaming Chat Endpoint
+The crown jewel of this architecture is `POST /sessions/{session_id}/chat`. 
+- **Validation**: It verifies the session exists, is owned by the user, and hasn't hit any limits.
+- **State Initialization**: It packages the user's message, DB session, and chat session into the `ChatState` dictionary.
+- **Server-Sent Events (SSE)**: Rather than making the user wait 10 seconds for the entire graph to finish, it uses LangChain's powerful `astream_events` feature. As the `llm_node` inside the graph talks to OpenAI, the route intercepts the `on_chat_model_stream` events and instantly blasts those tokens over SSE back to the frontend (`yield f"data: {{'content': chunk.content}}\n\n"`). This makes the UI feel infinitely faster and more responsive!
+
+---
+
+> [!IMPORTANT]
+> The backend is entirely done! The final piece of the puzzle (Phase 7 & 8) is building the React frontend components to consume this API. 

@@ -16,9 +16,11 @@ from app.core.exceptions import http_exception_handler, unhandled_exception_hand
 from app.api.routes import agent as agent_router
 from app.api.routes import document as document_router
 from app.api.routes import embedding as embedding_router
+from app.api.routes import chat as chat_router
 
 from app.db.database import engine, Base
 from app.models.document import Document # Import to ensure it gets created
+from app.models.chat import ChatSession, ChatMessage, ChatSummary
 from app.core.users import fastapi_users_app, auth_backend
 from app.schemas.user import UserRead, UserCreate, UserUpdate
 
@@ -129,6 +131,7 @@ app.add_exception_handler(Exception, unhandled_exception_handler)
 app.include_router(agent_router.router, prefix="/api/v1", tags=["agents"])
 app.include_router(document_router.router, prefix="/api/v1/document", tags=["documents"])
 app.include_router(embedding_router.router, prefix="/api/v1/embedding", tags=["embeddings"])
+app.include_router(chat_router.router, prefix="/api/v1/chat", tags=["chat"])
 
 # ── Health check ───────────────────────────────────────────────────────────────
 @app.get("/health")
